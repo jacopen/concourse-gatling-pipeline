@@ -1,0 +1,49 @@
+resources:
+- name: cf
+  type: cf
+  source:
+    api: ((cf_api))
+    username: ((cf_username))
+    password: ((cf_password))
+    organization: ((cf_org))
+    space: ((cf_space))
+    skip_cert_check: true
+- name: repo
+  type: git
+  source:
+    uri: https://github.com/jacopen/concourse-gatling-pipeline.git
+jobs:
+- name: gatling
+  public: true
+  plan:
+  - get: repo
+  - task: run-gatling
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: denvazh/gatling
+      inputs:
+      - name: repo
+      outputs:
+      - name: reports
+      params:
+        JAVA_OPTS: "-Dtarget_url=((target_url)) -Dduration=((duration)) -Drequests=((requests))"
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          set -e
+          cp repo/user-files/simulations/* /opt/gatling/user-files/simulations/
+          gatling.sh -rd "run" -s computerdatabase.CFSimulation
+          WORKING_DIR=$(pwd)
+          cd /opt/gatling/results/*
+          cp -R * $WORKING_DIR/reports/
+  - put: cf
+    params:
+      manifest: repo/manifest.yml
+      path: reports
+      current_app_name: gatling-results
+
