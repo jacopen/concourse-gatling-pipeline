@@ -1,0 +1,4 @@
+---
+applications:
+- name: gatling-results
+  random-route: true
