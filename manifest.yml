@@ -2,3 +2,5 @@
 applications:
 - name: gatling-results
   random-route: true
+  buildpacks:
+  - staticfile_buildpack
